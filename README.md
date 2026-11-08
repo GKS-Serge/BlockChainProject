@@ -1,9 +1,13 @@
-# Blockchain financière
+# BlockChainProject
 
-Implémentation en Python du cœur d'une blockchain orientée finance : le **bloc**
-et la **chaîne de blocs**.
+Projet d'école : blockchain orientée finance, écrite en Python.
 
-## Installation
+## Partie 1 — Bloc et chaîne de blocs
+
+Implémentation du cœur de la blockchain : la classe **Block** et la classe
+**Blockchain** (bloc genesis, ajout de blocs, vérification d'intégrité).
+
+### Installation
 
 ```bash
 python -m venv .venv
@@ -11,7 +15,7 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-## Utilisation
+### Utilisation
 
 ```python
 from blockchain import Blockchain
@@ -24,7 +28,7 @@ assert blockchain.is_valid()
 print(len(blockchain.chain))   # 3
 ```
 
-## Structure
+### Structure
 
 | Fichier | Rôle |
 | --- | --- |
@@ -32,7 +36,7 @@ print(len(blockchain.chain))   # 3
 | `blockchain/blockchain.py` | Classe `Blockchain` : bloc genesis, `add_block`, `add_transaction`, `is_valid`, `validate` |
 | `tests/test_blockchain.py` | Tests pytest : chaîne avec genesis + ajout de bloc, intégrité, sérialisation |
 
-## API publique
+### API publique
 
 | Méthode | Rôle |
 | --- | --- |
@@ -44,7 +48,7 @@ print(len(blockchain.chain))   # 3
 | `block.is_hash_valid()` | Recalcule l'empreinte et la compare à celle stockée |
 | `block.meets_difficulty(d)` | Vérifie la preuve de travail (zéros hex en tête du hash) |
 
-## Tests
+### Tests
 
 ```bash
 pytest
@@ -57,7 +61,7 @@ chaîne avec un bloc genesis puis ajoute un bloc.
 pytest tests/test_blockchain.py::test_add_block_to_the_chain
 ```
 
-## Règle d'intégrité
+### Règle d'intégrité
 
 Le hash d'un bloc est le SHA-256 de la sérialisation JSON canonique de
 `index`, `timestamp`, `data`, `previous_hash` et `nonce`. La sérialisation est
@@ -68,7 +72,7 @@ contenu obtiennent le même hash.
 Chaque bloc embarque le hash du précédent : modifier un bloc invalide toute la
 chaîne qui le suit, ce que vérifie `Blockchain.is_valid()`.
 
-## Points d'extension pour les autres parties du groupe
+### Points d'extension pour les autres parties du groupe
 
 Ces points sont prévus pour que les autres parties se branchent sans modifier
 l'API existante :
