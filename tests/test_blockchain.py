@@ -149,6 +149,69 @@ def test_block_hash_changes_with_the_content() -> None:
     assert block_b.is_hash_valid()
 
 
+def test_hash_ignores_dict_key_order() -> None:
+    """L'ordre des clés du payload ne change pas l'empreinte.
+
+    Deux nœuds qui construisent le même contenu dans un ordre différent
+    doivent obtenir la même empreinte, sinon la chaîne diverge au premier lien.
+    """
+    common = {"index": 1, "timestamp": 1_700_000_000.0, "previous_hash": "0" * 64}
+
+    block_a = Block(data={"sender": "alice", "receiver": "bob", "amount": 10.0}, **common)
+    block_b = Block(data={"amount": 10.0, "receiver": "bob", "sender": "alice"}, **common)
+
+    assert block_a.hash == block_b.hash
+
+
+def test_validate_explains_why_the_chain_is_invalid() -> None:
+    """`validate` retourne la liste des anomalies, pas seulement un booléen."""
+    blockchain = Blockchain()
+    blockchain.add_transaction(sender="alice", receiver="bob", amount=50.0)
+
+    assert blockchain.validate() == []
+    assert blockchain.is_valid()
+
+    # On remplace le deuxième bloc par un bloc sans lien avec le premier.
+    blockchain.chain[1] = Block(
+        index=5,
+        timestamp=1_700_000_000.0,
+        data={"type": "transaction"},
+        previous_hash="0" * 64,
+    )
+
+    problems = blockchain.validate()
+    assert problems, "une chaîne altérée doit produire au moins une anomalie"
+    assert not blockchain.is_valid()
+
+
+def test_add_block_respects_the_difficulty() -> None:
+    """Un bloc qui ne respecte pas la difficulté est refusé."""
+    # Difficulté 6 : la probabilité de passer par hasard est de 1/16 millions.
+    blockchain = Blockchain(difficulty=6)
+
+    with pytest.raises(ValueError):
+        blockchain.add_block({"type": "transaction", "amount": 1.0})
+
+    # La chaîne n'a pas été modifiée par l'échec.
+    assert len(blockchain.chain) == 1
+
+    # Une difficulté nulle n'impose rien.
+    loose = Blockchain()
+    assert loose.add_block({"type": "transaction", "amount": 1.0}) is not None
+
+
+def test_nonce_is_part_of_the_hashed_payload() -> None:
+    """Le nonce est couvert par l'empreinte : deux nonces donnent deux hashs."""
+    common = {"index": 1, "timestamp": 1_700_000_000.0, "previous_hash": "0" * 64}
+
+    block_a = Block(data={"amount": 10.0}, nonce=0, **common)
+    block_b = Block(data={"amount": 10.0}, nonce=1, **common)
+
+    assert block_a.hash != block_b.hash
+    assert block_a.nonce == 0
+    assert block_b.nonce == 1
+
+
 def test_block_roundtrip_serialization() -> None:
     """Un bloc sérialisé puis rechargé reste identique."""
     original = Block(

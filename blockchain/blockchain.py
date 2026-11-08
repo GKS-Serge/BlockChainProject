@@ -40,9 +40,13 @@ class Blockchain:
     ---------
     chain : list[Block]
         La liste ordonnée des blocs, du genesis au dernier bloc ajouté.
+    difficulty : int
+        Difficulté de preuve de travail exigée pour les blocs non-genesis.
+        ``0`` (défaut) désactive la vérification de minage.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, difficulty: int = 0) -> None:
+        self.difficulty = difficulty
         self.chain: list[Block] = [self.create_genesis_block()]
 
     # ------------------------------------------------------------------
@@ -72,24 +76,37 @@ class Blockchain:
     # ------------------------------------------------------------------
     # Ajout de blocs
     # ------------------------------------------------------------------
-    def add_block(self, data: dict[str, Any]) -> Block:
+    def add_block(
+        self,
+        data: dict[str, Any],
+        nonce: int | None = None,
+        difficulty: int | None = None,
+    ) -> Block:
         """Ajoute un bloc à la fin de la chaîne et retourne ce bloc.
 
         Le nouveau bloc reprend l'empreinte du dernier bloc comme
-        ``previous_hash`` et incrémente l'index.
+        ``previous_hash`` et incrémente l'index. Le ``previous_hash`` n'est
+        jamais fourni par l'appelant : c'est la chaîne qui garantit le lien.
 
         Parameters
         ----------
         data : dict
             Charge utile du bloc (transaction financière).
+        nonce : int, optional
+            Valeur de travail, réservée à la partie minage. Par défaut ``0``.
+        difficulty : int, optional
+            Difficulté exigée pour ce bloc. Par défaut, celle de la chaîne.
 
         Raises
         ------
         ValueError
-            Si la chaîne est vide ou si ``data`` n'est pas un dictionnaire.
+            Si ``data`` n'est pas un dictionnaire, ou si le bloc ne satisfait
+            pas la difficulté demandée.
         """
         if not isinstance(data, dict):
             raise ValueError("Les données d'un bloc doivent être un dictionnaire.")
+
+        required_difficulty = self.difficulty if difficulty is None else difficulty
 
         last_block = self.last_block
 
@@ -98,7 +115,15 @@ class Blockchain:
             timestamp=Block.new_timestamp(),
             data=dict(data),
             previous_hash=last_block.hash,
+            nonce=0 if nonce is None else nonce,
         )
+
+        if not block.meets_difficulty(required_difficulty):
+            raise ValueError(
+                f"Le bloc ne satisfait pas la difficulté {required_difficulty} "
+                f"(hash={block.hash})."
+            )
+
         self.chain.append(block)
         return block
 
@@ -145,27 +170,62 @@ class Blockchain:
     # Vérification d'intégrité
     # ------------------------------------------------------------------
     def is_valid(self) -> bool:
-        """Vérifie l'intégrité complète de la chaîne.
+        """Indique si la chaîne est intègre (voir :meth:`validate`)."""
+        return not self.validate()
 
-        Contrôle, pour chaque bloc : l'index, le lien vers le bloc précédent
-        et la correspondance de l'empreinte recalculée.
+    def validate(self) -> list[str]:
+        """Vérifie l'intégrité de la chaîne et retourne la liste des anomalies.
+
+        Chaque anomalie est décrite en une phrase, ce qui permet à une partie
+        CLI ou API d'expliquer *pourquoi* la chaîne est invalide.
+
+        Returns
+        -------
+        list[str]
+            Liste vide si la chaîne est intègre, sinon la liste des
+            problèmes détectés.
         """
+        problems: list[str] = []
+
         if not self.chain:
-            return False
+            return ["La chaîne est vide."]
 
         genesis = self.chain[0]
-        if genesis.index != 0 or genesis.previous_hash != GENESIS_PREVIOUS_HASH:
-            return False
+        if genesis.index != 0:
+            problems.append(
+                f"Le bloc genesis devrait avoir l'index 0 (index={genesis.index})."
+            )
+        if genesis.previous_hash != GENESIS_PREVIOUS_HASH:
+            problems.append(
+                "Le bloc genesis devrait pointer vers une empreinte de 64 zéros."
+            )
+        if not genesis.is_hash_valid():
+            problems.append("L'empreinte du bloc genesis ne correspond pas à son contenu.")
 
-        for current, following in zip(self.chain, self.chain[1:]):
+        for position, (current, following) in enumerate(
+            zip(self.chain, self.chain[1:]), start=1
+        ):
             if following.index != current.index + 1:
-                return False
+                problems.append(
+                    f"Le bloc {position} a l'index {following.index}, "
+                    f"attendu {current.index + 1}."
+                )
             if following.previous_hash != current.hash:
-                return False
+                problems.append(
+                    f"Le bloc {position} ne pointe pas vers l'empreinte du bloc "
+                    f"{position - 1}."
+                )
             if not following.is_hash_valid():
-                return False
+                problems.append(
+                    f"L'empreinte du bloc {position} ne correspond pas à son contenu."
+                )
+            if not following.meets_difficulty(self.difficulty):
+                problems.append(
+                    f"Le bloc {position} ne satisfait pas la difficulté "
+                    f"{self.difficulty}."
+                )
 
-        return True
+        return problems
 
     def to_dict(self) -> dict[str, Any]:
         """Sérialise la chaîne complète."""

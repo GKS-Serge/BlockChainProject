@@ -10,7 +10,8 @@ index          : position du bloc dans la chaîne (0 pour le bloc genesis)
 timestamp      : horodatage Unix de création du bloc
 data           : charge utile du bloc (transaction financière)
 previous_hash  : empreinte SHA-256 du bloc précédent
-hash           : empreinte SHA-256 calculée à partir des quatre champs ci-dessus
+hash           : empreinte SHA-256 calculée à partir des champs ci-dessus
+nonce          : valeur de travail, réservée à la partie minage du projet
 """
 
 from __future__ import annotations
@@ -28,9 +29,9 @@ __all__ = ["Block"]
 class Block:
     """Un bloc de la chaîne.
 
-    L'empreinte (``hash``) est calculée automatiquement à l'instanciation à
-    partir de ``index``, ``timestamp``, ``data`` et ``previous_hash``. Elle ne
-    peut donc pas être falsifiée sans invalider le bloc.
+    L'empreinte (``hash``) est calculée automatiquement à l'instanciation
+    à partir de ``index``, ``timestamp``, ``data``, ``previous_hash`` et
+    ``nonce``. Elle ne peut donc pas être falsifiée sans invalider le bloc.
     """
 
     index: int
@@ -38,6 +39,7 @@ class Block:
     data: dict[str, Any]
     previous_hash: str
     hash: str = field(default="")
+    nonce: int = 0
 
     def __post_init__(self) -> None:
         # Si le hash n'est pas fourni (cas normal), on le calcule.
@@ -54,6 +56,7 @@ class Block:
             "timestamp": self.timestamp,
             "data": self.data,
             "previous_hash": self.previous_hash,
+            "nonce": self.nonce,
         }
 
     def compute_hash(self) -> str:
@@ -76,6 +79,20 @@ class Block:
         """Indique si l'empreinte stockée correspond au contenu du bloc."""
         return self.hash == self.compute_hash()
 
+    def meets_difficulty(self, difficulty: int) -> bool:
+        """Indique si l'empreinte respecte la difficulté demandée.
+
+        La difficulté s'exprime en nombre de zéros hexadécimaux en tête de
+        l'empreinte : ``difficulty=2`` exige un hash commençant par ``"00"``.
+
+        Cette vérification sert à la partie minage du projet ; elle est
+        fournie ici pour que la chaîne puisse valider des blocs minés
+        ailleurs.
+        """
+        if difficulty <= 0:
+            return True
+        return self.hash.startswith("0" * difficulty)
+
     # ------------------------------------------------------------------
     # Sérialisation
     # ------------------------------------------------------------------
@@ -87,6 +104,7 @@ class Block:
             "data": self.data,
             "previous_hash": self.previous_hash,
             "hash": self.hash,
+            "nonce": self.nonce,
         }
 
     @classmethod
@@ -98,6 +116,7 @@ class Block:
             data=dict(block["data"]),
             previous_hash=block["previous_hash"],
             hash=block["hash"],
+            nonce=block.get("nonce", 0),
         )
 
     @staticmethod
