@@ -184,20 +184,38 @@ def test_validate_explains_why_the_chain_is_invalid() -> None:
     assert not blockchain.is_valid()
 
 
-def test_add_block_respects_the_difficulty() -> None:
-    """Un bloc qui ne respecte pas la difficulté est refusé."""
-    # Difficulté 6 : la probabilité de passer par hasard est de 1/16 millions.
-    blockchain = Blockchain(difficulty=6)
+def test_add_block_mines_to_satisfy_the_difficulty() -> None:
+    """Un bloc ajouté à une chaîne exigeante est miné automatiquement."""
+    blockchain = Blockchain(difficulty=3)
+
+    block = blockchain.add_block({"type": "transaction", "amount": 1.0})
+
+    assert block.hash.startswith("000")
+    assert block.nonce > 0
+    assert block.is_hash_valid()
+    assert len(blockchain.chain) == 2
+    assert blockchain.is_valid()
+
+
+def test_add_block_rejects_a_nonce_that_misses_the_difficulty() -> None:
+    """Un nonce fourni qui ne respecte pas la difficulté est refusé."""
+    blockchain = Blockchain(difficulty=3)
 
     with pytest.raises(ValueError):
-        blockchain.add_block({"type": "transaction", "amount": 1.0})
+        blockchain.add_block({"type": "transaction", "amount": 1.0}, nonce=0)
 
     # La chaîne n'a pas été modifiée par l'échec.
     assert len(blockchain.chain) == 1
 
-    # Une difficulté nulle n'impose rien.
-    loose = Blockchain()
-    assert loose.add_block({"type": "transaction", "amount": 1.0}) is not None
+
+def test_zero_difficulty_accepts_any_block() -> None:
+    """Une difficulté nulle n'impose rien."""
+    blockchain = Blockchain()
+
+    block = blockchain.add_block({"type": "transaction", "amount": 1.0})
+
+    assert block.nonce == 0
+    assert blockchain.is_valid()
 
 
 def test_nonce_is_part_of_the_hashed_payload() -> None:

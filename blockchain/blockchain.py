@@ -24,6 +24,7 @@ from typing import Any, Mapping
 
 from .block import Block
 from .hashing import check_difficulty
+from .mining import mine_block
 
 __all__ = ["Blockchain", "GENESIS_DATA", "GENESIS_PREVIOUS_HASH", "GENESIS_TIMESTAMP"]
 
@@ -127,7 +128,17 @@ class Blockchain:
             nonce=0 if nonce is None else nonce,
         )
 
-        if not block.meets_difficulty(required_difficulty):
+        if required_difficulty > 0:
+            if nonce is None:
+                # Aucune preuve de travail fournie : on cherche le nonce.
+                # Le minage appartient à M2 (module blockchain.mining).
+                mine_block(block, required_difficulty)
+            elif not block.meets_difficulty(required_difficulty):
+                raise ValueError(
+                    f"Le bloc ne satisfait pas la difficulté {required_difficulty} "
+                    f"(hash={block.hash})."
+                )
+        elif not block.meets_difficulty(required_difficulty):
             raise ValueError(
                 f"Le bloc ne satisfait pas la difficulté {required_difficulty} "
                 f"(hash={block.hash})."
