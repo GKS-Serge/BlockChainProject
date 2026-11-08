@@ -8,13 +8,22 @@ La classe :class:`Blockchain` orchestre l'ensemble de la chaîne :
 
 Dans le domaine de la finance, la charge utile (``data``) d'un bloc porte
 une transaction : expéditeur, destinataire et montant.
+
+Répartition du groupe
+---------------------
+Ce fichier appartient à **M1 (bloc & chaîne)**. Le calcul de l'empreinte et
+la vérification de la difficulté vivent dans :mod:`blockchain.hashing`, qui
+appartient à **M2 (hash, minage & intégrité)**. Les points d'entrée
+publics (`add_block`, `add_transaction`, `is_valid`, `validate`) restent
+stables quel que soit le travail de M2.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
 from .block import Block
+from .hashing import check_difficulty
 
 __all__ = ["Blockchain", "GENESIS_DATA", "GENESIS_PREVIOUS_HASH", "GENESIS_TIMESTAMP"]
 
@@ -227,9 +236,33 @@ class Blockchain:
 
         return problems
 
+    def total_work(self) -> int:
+        """Retourne le travail cumulé de la chaîne.
+
+        Cette mesure sert la règle de sélection de **M4 (validation &
+        synchronisation)** : entre deux chaînes valides, celle qui a le plus
+        de travail cumulé l'emporte. Le calcul lui-même appartient à M2 et
+        peut être remplacé via :func:`blockchain.mining.work_of`.
+        """
+        from .mining import work_of
+
+        return sum(work_of(block, self.difficulty) for block in self.chain)
+
     def to_dict(self) -> dict[str, Any]:
         """Sérialise la chaîne complète."""
         return {"chain": [block.to_dict() for block in self.chain]}
+
+    @classmethod
+    def from_dict(cls, chain: Mapping[str, Any]) -> "Blockchain":
+        """Reconstruit une chaîne à partir de sa représentation dictionnaire.
+
+        Utilisé par **M3 (API & communication)** pour décoder une chaîne
+        reçue par HTTP. Les blocs sont reconstruits sans recalculer leur
+        empreinte : la validation se fait ensuite via :meth:`validate`.
+        """
+        blockchain = cls()
+        blockchain.chain = [Block.from_dict(block) for block in chain["chain"]]
+        return blockchain
 
     def __str__(self) -> str:  # pragma: no cover - confort de débogage
         return f"Blockchain(length={len(self.chain)}, valid={self.is_valid()})"

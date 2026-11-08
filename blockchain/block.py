@@ -12,15 +12,22 @@ data           : charge utile du bloc (transaction financière)
 previous_hash  : empreinte SHA-256 du bloc précédent
 hash           : empreinte SHA-256 calculée à partir des champs ci-dessus
 nonce          : valeur de travail, réservée à la partie minage du projet
+
+Répartition du groupe
+---------------------
+Ce fichier appartient à **M1 (bloc & chaîne)**. Le calcul de l'empreinte et
+la vérification de la difficulté sont implémentés dans
+:mod:`blockchain.hashing`, qui appartient à **M2 (hash, minage & intégrité)**
+et peut évoluer sans modifier ce fichier.
 """
 
 from __future__ import annotations
 
-import hashlib
-import json
 import time
 from dataclasses import dataclass, field
 from typing import Any, Mapping
+
+from .hashing import canonical_payload, check_difficulty, hash_block
 
 __all__ = ["Block"]
 
@@ -50,30 +57,23 @@ class Block:
     # Calcul de l'empreinte
     # ------------------------------------------------------------------
     def payload(self) -> dict[str, Any]:
-        """Retourne les champs signés par l'empreinte (le hash est exclu)."""
-        return {
-            "index": self.index,
-            "timestamp": self.timestamp,
-            "data": self.data,
-            "previous_hash": self.previous_hash,
-            "nonce": self.nonce,
-        }
+        """Retourne les champs signés par l'empreinte (le hash est exclu).
+
+        Le contenu canonique est défini par :func:`blockchain.hashing.canonical_payload`
+        (module de M2) : c'est le contrat d'empreinte partagé avec M2.
+        """
+        return canonical_payload(self)
 
     def compute_hash(self) -> str:
         """Calcule l'empreinte SHA-256 du bloc.
 
-        La sérialisation JSON est canonique (``sort_keys=True`` et séparateurs
-        compacts) afin que le hash ne dépende pas de l'ordre des clés du
+        Le calcul est délégué à :mod:`blockchain.hashing` (M2). La
+        sérialisation y est canonique (``sort_keys=True`` et séparateurs
+        compacts) : le hash ne dépend pas de l'ordre des clés du
         dictionnaire ``data``. Deux blocs ayant les mêmes champs produisent
         donc toujours la même empreinte.
         """
-        encoded = json.dumps(
-            self.payload(),
-            sort_keys=True,
-            separators=(",", ":"),
-            default=str,
-        ).encode("utf-8")
-        return hashlib.sha256(encoded).hexdigest()
+        return hash_block(self)
 
     def is_hash_valid(self) -> bool:
         """Indique si l'empreinte stockée correspond au contenu du bloc."""
@@ -85,13 +85,9 @@ class Block:
         La difficulté s'exprime en nombre de zéros hexadécimaux en tête de
         l'empreinte : ``difficulty=2`` exige un hash commençant par ``"00"``.
 
-        Cette vérification sert à la partie minage du projet ; elle est
-        fournie ici pour que la chaîne puisse valider des blocs minés
-        ailleurs.
+        La vérification est déléguée à :mod:`blockchain.hashing` (M2).
         """
-        if difficulty <= 0:
-            return True
-        return self.hash.startswith("0" * difficulty)
+        return check_difficulty(self.hash, difficulty)
 
     # ------------------------------------------------------------------
     # Sérialisation
