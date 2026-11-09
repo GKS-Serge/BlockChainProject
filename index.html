@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Observatoire de la chaîne — STRATE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navigation principale">
+        <a class="brand-mark" href="#" aria-label="STRATE, accueil">
+          <img src="./assets/orbit.svg" alt="" />
+        </a>
+        <nav class="primary-nav">
+          <button class="nav-item is-active" data-nav="Structure" type="button" aria-current="page">
+            <span class="nav-icon"><img src="./assets/network.svg" alt="" /></span>
+            <span>Structure</span>
+          </button>
+          <button class="nav-item" data-nav="Blocs" type="button">
+            <span class="nav-icon"><img src="./assets/boxes.svg" alt="" /></span>
+            <span>Blocs</span>
+          </button>
+          <button class="nav-item" data-nav="Transactions" type="button">
+            <span class="nav-icon"><img src="./assets/arrowLeftRight.svg" alt="" /></span>
+            <span>Transactions</span>
+          </button>
+          <button class="nav-item" data-nav="Mesures" type="button">
+            <span class="nav-icon"><img src="./assets/chartNoAxesCombined.svg" alt="" /></span>
+            <span>Mesures</span>
+          </button>
+        </nav>
+        <div class="sidebar-divider"></div>
+        <button class="settings-button" type="button" aria-label="Paramètres">
+          <img src="./assets/settings2.svg" alt="" />
+        </button>
+        <div class="sidebar-foot">
+          <span>v0.1</span>
+          <span>LAB</span>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="wordmark">STRATE</div>
+          <span class="topbar-divider"></span>
+          <button class="lab-select" type="button">
+            <span>Nœud Python local · SHA-256</span>
+            <img src="./assets/chevronDown.svg" alt="" />
+          </button>
+          <div class="topbar-spacer"></div>
+          <span class="demo-badge" id="connection-status"><i></i>Connexion au nœud…</span>
+          <span class="public-mode">Registre local · données réelles</span>
+          <button class="help-button" type="button" aria-label="Aide">
+            <img src="./assets/circleHelp.svg" alt="" />
+          </button>
+        </header>
+
+        <section class="page-intro">
+          <div class="intro-copy">
+            <div class="title-line">
+              <h1>Observatoire de la chaîne</h1>
+              <span class="page-number">/ 01</span>
+            </div>
+            <p>Explorez les blocs, vérifiez leur intégrité et suivez les transactions du registre local.</p>
+          </div>
+          <label class="search-box">
+            <img src="./assets/search.svg" alt="" />
+            <input id="search-input" type="search" placeholder="Alias de bloc, transaction ou identifiant" />
+            <kbd>⌘ K</kbd>
+          </label>
+          <button class="visibility-button" id="visibility-toggle" type="button" aria-pressed="false">
+            <img src="./assets/eye.svg" alt="" />
+            <span>Afficher les données</span>
+            <span class="visibility-state">Données masquées</span>
+          </button>
+          <button class="new-transaction-button" id="new-transaction" type="button">Nouvelle transaction</button>
+        </section>
+
+        <section class="metrics" aria-label="Indicateurs de la blockchain">
+          <article class="metric">
+            <div class="metric-copy">
+              <span class="metric-label">BLOCS DANS LA CHAÎNE</span>
+              <strong id="metric-blocks">—</strong>
+              <span id="metric-blocks-note">En attente du nœud</span>
+            </div>
+            <img class="metric-art" data-motion-node="942:543" src="./assets/image171.png" alt="" />
+          </article>
+          <article class="metric">
+            <div class="metric-copy">
+              <span class="metric-label">TRANSACTIONS CUMULÉES</span>
+              <strong id="metric-transactions">—</strong>
+              <span id="metric-transactions-note">Sur le registre local</span>
+            </div>
+            <div class="gauge" aria-hidden="true">
+              <span class="gauge-face"><img src="./assets/image172.png" alt="" /></span>
+              <span class="gauge-needle" data-motion-node="947:19"><img src="./assets/image172.png" alt="" /></span>
+              <img class="gauge-pivot" src="./assets/pivotFixe.svg" alt="" />
+            </div>
+          </article>
+          <article class="metric">
+            <div class="metric-copy">
+              <span class="metric-label">INTERVALLE MOYEN</span>
+              <strong id="metric-interval">—</strong>
+              <span>Entre les blocs ajoutés</span>
+            </div>
+          </article>
+          <article class="metric metric-last">
+            <div class="metric-copy">
+              <span class="metric-label">INTÉGRITÉ DU REGISTRE</span>
+              <strong id="metric-validity">—</strong>
+              <span id="metric-validity-note">Vérification SHA-256</span>
+            </div>
+          </article>
+        </section>
+
+        <section class="exploration">
+          <div class="left-column">
+            <article class="card graph-card">
+              <header class="card-header graph-header">
+                <div class="section-title">
+                  <span class="section-index">01</span>
+                  <h2>Structure de la chaîne</h2>
+                  <span class="section-meta" id="chain-count">— bloc</span>
+                </div>
+                <div class="view-switch" role="tablist" aria-label="Mode de visualisation">
+                  <button class="view-tab is-selected" data-view="graph" role="tab" aria-selected="true" type="button">Graphe</button>
+                  <button class="view-tab" data-view="timeline" role="tab" aria-selected="false" type="button">Chronologie</button>
+                  <button class="view-tab" data-view="list" role="tab" aria-selected="false" type="button">Liste</button>
+                </div>
+              </header>
+              <div class="graph-toolbar">
+                <div class="toolbar-filters">
+                  <button class="filter-control" id="status-filter" type="button">
+                    <img src="./assets/slidersHorizontal.svg" alt="" />
+                    <span id="graph-filter-count">Chargement…</span>
+                    <img src="./assets/chevronDown1.svg" alt="" />
+                  </button>
+                  <button class="filter-control" id="state-filter" type="button">
+                    <span>Intégrité SHA-256</span>
+                    <img src="./assets/chevronDown1.svg" alt="" />
+                  </button>
+                  <button class="filter-control" id="links-filter" type="button">
+                    <span>Liens de parenté</span>
+                    <img src="./assets/chevronDown1.svg" alt="" />
+                  </button>
+                </div>
+                <span class="sort-label">ANCIEN → RÉCENT</span>
+              </div>
+
+              <div class="graph-viewport" id="graph-viewport">
+                <div class="graph-stage" id="graph-stage">
+                  <img class="reading-area" src="./assets/perimetreDeLecture.svg" alt="" />
+                  <img class="selection-field" data-motion-node="943:3180" src="./assets/champDuBlocSelectionne.png" alt="" />
+                  <img class="edge edge-a" src="./assets/liaisonParentEnfant3.svg" alt="" />
+                  <img class="edge edge-b" src="./assets/liaisonParentEnfant2.svg" alt="" />
+                  <img class="edge edge-c" src="./assets/liaisonParentEnfant1.svg" alt="" />
+                  <img class="edge edge-d" src="./assets/liaisonParentEnfant.svg" alt="" />
+                  <img class="edge edge-e" src="./assets/liaisonParentEnfant4.svg" alt="" />
+                  <img class="signal signal-one" data-motion-node="952:14" src="./assets/signalAnime13.svg" alt="" />
+                  <img class="signal signal-two" data-motion-node="952:17" src="./assets/signalAnime12.svg" alt="" />
+                  <img class="signal signal-three" data-motion-node="952:15" src="./assets/signalAnime23.svg" alt="" />
+                  <img class="signal signal-four" data-motion-node="952:16" src="./assets/signalAnime31.svg" alt="" />
+
+                  <div class="graph-note">
+                    <span class="graph-kicker">TOPOLOGIE / REGISTRE LOCAL</span>
+                        <p>Chaque bloc référence l’empreinte de son parent.</p>
+                  </div>
+                  <div class="link-proof">
+                    <span class="graph-kicker orange" id="link-proof-title">CHAÎNE SHA-256</span>
+                    <span id="link-proof-copy">Empreintes calculées par le nœud Python</span>
+                    <span class="proof-value" id="link-proof-value"><i></i>Genesis</span>
+                  </div>
+
+                  <button class="block-node node-q7" data-motion-node="943:3206" data-block="Q7M2X" type="button" aria-label="Sélectionner le bloc Q7M2X">
+                    <span class="block-parent">T7Q2M</span>
+                    <span class="block-body">
+                      <span class="block-top"><b>Q7M2X</b><img src="./assets/etatDuBloc.svg" alt="Validé" /></span>
+                      <span class="block-alias">Q7M2X</span>
+                      <span class="block-summary">4 tx <img src="./assets/link.svg" alt="" /></span>
+                    </span>
+                    <span class="block-previous">préc. GEN-ROOT</span>
+                  </button>
+                  <button class="block-node node-k4" data-motion-node="943:3217" data-block="K4P9N" type="button" aria-label="Sélectionner le bloc K4P9N">
+                    <span class="block-parent">T4K9P</span>
+                    <span class="block-body">
+                      <span class="block-top"><b>K4P9N</b><img src="./assets/etatDuBloc.svg" alt="Validé" /></span>
+                      <span class="block-alias">K4P9N</span>
+                      <span class="block-summary">8 tx <img src="./assets/link.svg" alt="" /></span>
+                    </span>
+                    <span class="block-previous">préc. Q7M2X</span>
+                  </button>
+                  <button class="block-node node-v8 is-current" data-motion-node="943:3228" data-block="V8R3T" type="button" aria-label="Sélectionner le bloc V8R3T">
+                    <span class="block-parent">T8V3R</span>
+                    <span class="block-body">
+                      <span class="block-top"><b>V8R3T</b><img src="./assets/indicateur.svg" alt="Sélectionné" /></span>
+                      <span class="block-alias">V8R3T</span>
+                      <span class="block-summary">6 tx <img src="./assets/link.svg" alt="" /></span>
+                    </span>
+                    <span class="block-previous">préc. K4P9N</span>
+                  </button>
+                  <button class="block-node node-l6 is-muted" data-motion-node="943:3239" data-block="L6W5A" type="button" aria-label="Sélectionner le bloc L6W5A">
+                    <span class="block-parent">T6L5W</span>
+                    <span class="block-body">
+                      <span class="block-top"><b>L6W5A</b><img src="./assets/etatDuBloc.svg" alt="Validé" /></span>
+                      <span class="block-alias">L6W5A</span>
+                      <span class="block-summary">7 tx <img src="./assets/link.svg" alt="" /></span>
+                    </span>
+                    <span class="block-previous">préc. V8R3T</span>
+                  </button>
+                  <button class="block-node node-z2 is-muted" data-motion-node="943:3250" data-block="Z2C7H" type="button" aria-label="Sélectionner le bloc Z2C7H">
+                    <span class="block-parent">T2Z7C</span>
+                    <span class="block-body">
+                      <span class="block-top"><b>Z2C7H</b><img src="./assets/indicateur.svg" alt="En attente" /></span>
+                      <span class="block-alias">Z2C7H</span>
+                      <span class="block-summary">3 tx <img src="./assets/link.svg" alt="" /></span>
+                    </span>
+                    <span class="block-previous">préc. L6W5A</span>
+                  </button>
+
+                  <div class="oscillo-caption">
+                    <span class="graph-kicker orange">PREUVE D’INTÉGRITÉ</span>
+                      <span id="integrity-summary">Vérification en attente</span>
+                      <span class="proof-value" id="integrity-selected"><i></i>Genesis</span>
+                  </div>
+                  <div class="zoom-controls" aria-label="Contrôles de cadrage">
+                    <button id="zoom-out" type="button" aria-label="Dézoomer"><img src="./assets/minus.svg" alt="" /></button>
+                    <button id="zoom-in" type="button" aria-label="Zoomer"><img src="./assets/plus.svg" alt="" /></button>
+                    <button id="zoom-reset" type="button" aria-label="Réinitialiser le cadrage"><img src="./assets/scan.svg" alt="" /></button>
+                  </div>
+                </div>
+              </div>
+
+              <footer class="graph-legend">
+                <div class="legend-items">
+                  <span><i class="dot dot-valid"></i>Validé</span>
+                  <span><i class="dot dot-current"></i>Sélectionné</span>
+                  <span><i class="dot dot-pending"></i>À vérifier</span>
+                  <span><i class="legend-line"></i>Parent → enfant</span>
+                </div>
+                <span class="scale-label" id="scale-label">ÉCHELLE LIBRE · 100 %</span>
+              </footer>
+              <div class="alternate-view" id="alternate-view" hidden></div>
+            </article>
+
+            <article class="card transaction-card" data-motion-node="943:3283">
+              <header class="card-header transaction-header">
+                <div class="section-title">
+                  <span class="section-index">02</span>
+                  <h2>Transactions du bloc</h2>
+                  <span class="section-meta"><span id="transaction-block">—</span> · <span id="block-transaction-count">0 transaction</span></span>
+                </div>
+                <div class="table-actions">
+                  <button class="table-filter" id="transaction-filter" type="button">
+                    <img src="./assets/listFilter.svg" alt="" />
+                    <span>Tous les types</span>
+                    <img src="./assets/chevronDown1.svg" alt="" />
+                  </button>
+                  <button class="icon-button" id="export-transactions" type="button" aria-label="Télécharger les transactions">
+                    <img src="./assets/download.svg" alt="" />
+                  </button>
+                </div>
+              </header>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>TRANSACTION · ALIAS</th>
+                      <th>DEPUIS</th>
+                      <th>VERS</th>
+                      <th>MONTANT · ALIAS</th>
+                      <th>TAILLE<br />ALIAS</th>
+                      <th>ÉTAT</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transaction-rows"></tbody>
+                </table>
+              </div>
+              <footer class="table-footer">
+                <span id="transaction-count">En attente du nœud</span>
+                <span>DONNÉES DU REGISTRE LOCAL</span>
+              </footer>
+            </article>
+          </div>
+
+          <aside class="card inspector" data-motion-node="943:3365" aria-label="Inspecteur de bloc">
+            <header class="inspector-header">
+              <div><img src="./assets/panelRight.svg" alt="" /><h2>Inspecteur de bloc</h2></div>
+              <button class="icon-button" type="button" aria-label="Plus d'options"><img src="./assets/ellipsis.svg" alt="" /></button>
+            </header>
+            <div class="selected-block">
+              <span class="eyebrow">BLOC SÉLECTIONNÉ</span>
+              <div class="selected-title">
+                <h3 id="inspector-alias">V8R3T</h3>
+                <span class="validated-pill"><img src="./assets/check.svg" alt="" />Validé</span>
+              </div>
+              <p>Inspectez le contenu réel du bloc et ses empreintes SHA-256.</p>
+            </div>
+            <div class="inspector-tabs" role="tablist" aria-label="Détails du bloc">
+              <button class="inspector-tab is-active" data-panel="details" role="tab" aria-selected="true" type="button">Détails</button>
+              <button class="inspector-tab" data-panel="links" role="tab" aria-selected="false" type="button">Liaisons</button>
+              <button class="inspector-tab" data-panel="raw" role="tab" aria-selected="false" type="button">Données brutes</button>
+            </div>
+            <div class="inspector-content" id="inspector-content"></div>
+            <div class="simulation-note">
+              <div><img src="./assets/flaskConical.svg" alt="" /><strong id="validation-title">Vérification du registre</strong></div>
+              <p id="validation-note">L’intégrité est vérifiée à partir des empreintes SHA-256 et des liens entre blocs.</p>
+            </div>
+          </aside>
+        </section>
+      </main>
+    </div>
+    <dialog class="transaction-dialog" id="transaction-dialog" aria-labelledby="transaction-dialog-title">
+      <form id="transaction-form">
+        <header>
+          <div>
+            <span class="eyebrow">REGISTRE LOCAL</span>
+            <h2 id="transaction-dialog-title">Nouvelle transaction</h2>
+          </div>
+          <button class="icon-button" id="close-transaction-dialog" type="button" aria-label="Fermer">×</button>
+        </header>
+        <label>Expéditeur<input name="sender" required maxlength="200" autocomplete="off" /></label>
+        <label>Destinataire<input name="receiver" required maxlength="200" autocomplete="off" /></label>
+        <div class="transaction-fields">
+          <label>Montant<input name="amount" type="number" min="0.01" step="any" required /></label>
+          <label>Devise<input name="currency" value="EUR" required maxlength="12" /></label>
+        </div>
+        <p>La transaction sera ajoutée immédiatement comme nouveau bloc à la chaîne locale.</p>
+        <footer>
+          <button class="cancel-button" id="cancel-transaction" type="button">Annuler</button>
+          <button class="new-transaction-button" type="submit">Ajouter au registre</button>
+        </footer>
+      </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./assets/figma-motion.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

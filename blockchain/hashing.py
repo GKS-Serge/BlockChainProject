@@ -28,12 +28,24 @@ import json
 from typing import Any
 
 __all__ = [
+    "MAX_DIFFICULTY",
     "canonical_payload",
     "serialize_payload",
     "hash_payload",
     "hash_block",
     "check_difficulty",
 ]
+
+MAX_DIFFICULTY = hashlib.sha256().digest_size * 2
+
+
+def _validate_difficulty(difficulty: int) -> None:
+    if type(difficulty) is not int:
+        raise TypeError("La difficulté doit être un entier.")
+    if not 0 <= difficulty <= MAX_DIFFICULTY:
+        raise ValueError(
+            f"La difficulté doit être comprise entre 0 et {MAX_DIFFICULTY}."
+        )
 
 
 def canonical_payload(block: Any) -> dict[str, Any]:
@@ -66,13 +78,14 @@ def serialize_payload(payload: dict[str, Any]) -> str:
     ``sort_keys=True`` garantit que l'ordre d'insertion des clés du
     dictionnaire ``data`` n'influence pas le résultat, et les séparateurs
     compacts évitent que deux encodeurs divergeant sur les espaces
-    produisent des empreintes différentes.
+    produisent des empreintes différentes. Les valeurs non représentables
+    en JSON standard sont rejetées au lieu d'être converties implicitement.
     """
     return json.dumps(
         payload,
         sort_keys=True,
         separators=(",", ":"),
-        default=str,
+        allow_nan=False,
     )
 
 
@@ -91,8 +104,10 @@ def check_difficulty(hash_hex: str, difficulty: int) -> bool:
 
     La difficulté s'exprime en nombre de zéros hexadécimaux en tête de
     l'empreinte : ``difficulty=2`` exige un hash commençant par ``"00"``.
-    Une difficulté nulle ou négative n'impose rien.
+    Une difficulté nulle n'impose rien. Les difficultés négatives,
+    supérieures à la longueur d'un hash SHA-256 ou non entières sont rejetées.
     """
-    if difficulty <= 0:
-        return True
+    _validate_difficulty(difficulty)
+    if not isinstance(hash_hex, str):
+        raise TypeError("L'empreinte doit être une chaîne de caractères.")
     return hash_hex.startswith("0" * difficulty)
