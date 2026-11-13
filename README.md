@@ -97,7 +97,13 @@ Le hash d'un bloc est le SHA-256 de la sérialisation JSON canonique de
 `index`, `timestamp`, `data`, `previous_hash` et `nonce`. La sérialisation est
 canonique (`sort_keys=True`, séparateurs compacts) : l'ordre des clés du
 payload ne change donc pas l'empreinte, et deux nœuds qui construisent le même
-contenu obtiennent le même hash.
+contenu obtiennent le même hash. Les valeurs non JSON standard (objets
+arbitraires, `NaN` ou infinis) sont rejetées au lieu d'être converties.
+
+La difficulté de preuve de travail est un entier compris entre 0 et 64,
+exprimé en zéros hexadécimaux initiaux. Une difficulté de 0 désactive le
+minage ; les valeurs hors limites et les difficultés non entières sont
+rejetées.
 
 Chaque bloc embarque le hash du précédent : modifier un bloc invalide toute la
 chaîne qui le suit, ce que vérifie `Blockchain.is_valid()`.
@@ -117,3 +123,20 @@ l'API existante :
 - **Persistance (M3)** — `to_dict()` / `from_dict()` sur `Block` et `Blockchain`.
 - **Rapport d'erreurs (M4/M5)** — `is_valid()` renvoie un booléen, `validate()`
   renvoie la liste des raisons de l'échec.
+
+## Tableau de bord local
+
+L'interface web utilise directement la blockchain Python et ne nécessite aucune
+dépendance supplémentaire. Depuis la racine du projet, démarrez le serveur :
+
+```bash
+python -m blockchain.server
+```
+
+Ouvrez ensuite [http://localhost:8080](http://localhost:8080). Le tableau de
+bord affiche la chaîne réelle, son intégrité et les transactions du bloc
+sélectionné. Le formulaire **Nouvelle transaction** ajoute un bloc à la chaîne.
+La chaîne est enregistrée dans `data/blockchain.json` et rechargée au prochain
+démarrage. Le serveur n'écoute que sur la machine locale (`127.0.0.1`) ; pour
+choisir un autre port, définissez la variable d'environnement
+`BLOCKCHAIN_PORT`.
